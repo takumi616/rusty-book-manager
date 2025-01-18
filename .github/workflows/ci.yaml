@@ -1,0 +1,59 @@
+name: CI for book
+on:
+    push:
+        branches: [main]
+    pull_request:
+        paths-ignore:
+            - "README.md"
+    
+jobs:
+    check:
+        name: Check
+        runs-on: ubuntu-latest
+        steps:
+            # 1
+            # Repository checkout. 
+            - uses: actions/checkout@v4
+
+            # 2
+            # Cache rust artifact.
+            - name: Cache dependencies
+              uses: Swatinem/rust-cache@v2
+
+            # 3
+            # Install rust toolchain(rustfmt, clippy and so on)
+            - name: Install Rust toolchain
+              run: |
+                rustup toolchain install stable
+
+            # 4 
+            # Install cargo-nextest and cargo-make by taiki-e/install-action.
+            - name: Install cargo-related tools
+              uses: taiki-e/install-action@v2
+              with:
+                tool: nextest,cargo-make
+
+            # 5
+            # Build my project, including test codes.
+            # --no-run: build without executing tests.
+            # --locked: reference cargo.lock and if it does not exist or is not latest version,
+            #           build does not work.
+            # Building before tests and clippy leads to reduction of CI execution time.
+            - name: Tests compile
+              run: cargo make test-ci --no-run --locked
+                
+            # 6
+            # Execute test(cargo-nextest)
+            - name: Test
+              run: cargo make test-ci
+
+            # 7
+            # Execute linter.
+            # -Dwarnings: Warning is detected as an error.
+            - name: Clippy
+              run: cargo make clippy-ci -- -Dwarnings
+
+            # 8
+            # Check formatter.
+            - name: Rustfmt
+              run: cargo make fmt -- --check
