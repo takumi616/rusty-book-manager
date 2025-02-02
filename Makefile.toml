@@ -48,6 +48,7 @@ JAEGER_PORT = 6831
 run_task = [
     { name = [
         "compose-up-db",
+        "migrate",
         "compose-up-redis",
     ] },
 ]
@@ -152,6 +153,8 @@ until sqlx migrate run --source adapter/migrations; do
 done
 '''
 
+# cargo make sqlx migrate revert
+# sqlx migrate revert --source adapter/migrations
 [tasks.sqlx]
 extend = "set-env-local"
 install_crate = { crate_name = "sqlx-cli", binary = "sqlx", test_arg = "--help", version = "0.7.3" }
